@@ -210,8 +210,8 @@ public class JDBCRunner {
         int param0 = -1;
         String param1 = null, param2 = null, param3 = null, param4 = null, param5 = null, param6 = null, param7 = null;
 
-        Statement statement = connection.createStatement();                 // создаем оператор для простого запроса (без параметров)
-        ResultSet rs = statement.executeQuery("SELECT * FROM driver ORDER BY 1;");  // выполняем запроса на поиск и получаем список ответов
+        Statement statement = connection.createStatement();                
+        ResultSet rs = statement.executeQuery("SELECT * FROM driver ORDER BY 1;");  
 
         while (rs.next()) {
             param0 = rs.getInt(1);
@@ -272,7 +272,35 @@ public class JDBCRunner {
         if (id <= 0) return;
 
         long time = System.currentTimeMillis();
+        PreparedStatement statement = connection.prepareStatement(private static void addFines(Connection connection, int car_id, String car_number, String type, int cost) throws SQLException {
+        if (car_id <= 0 || car_number == null || car_number.isBlank() || type == null || type.isBlank() || cost <= 0) {
+            System.out.println("Invalid parameters!");
+            return;
+        }
+
         PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO fines(car_id, car_number, type, cost) VALUES (?, ?, ?, ?) returning penalty_number;",
+                Statement.RETURN_GENERATED_KEYS
+        );
+
+        statement.setInt(1, car_id);
+        statement.setString(2, car_number);
+        statement.setString(3, type);
+        statement.setInt(4, cost);
+        int count = statement.executeUpdate();  
+
+        ResultSet rs = statement.getGeneratedKeys(); 
+        if (rs.next()) { 
+            int penaltyNumber = rs.getInt(1); 
+            System.out.println("Generated Penalty Number: " + penaltyNumber);
+        }
+
+        rs.close();
+        statement.close();
+
+        System.out.println("INSERTed " + count + " fine");
+        // getDriver(connection); 
+    }
                 "SELECT car.id, car.car_number, car.brand, car.model, car.fines, car.owner " +
                         "FROM driver " +
                         "JOIN car ON driver.driver_id = car.id " +
@@ -366,11 +394,11 @@ public class JDBCRunner {
         statement.setString(2, car_number);
         statement.setString(3, type);
         statement.setInt(4, cost);
-        int count = statement.executeUpdate();  // выполняем запрос на вставку и возвращаем количество измененных строк
+        int count = statement.executeUpdate();  
 
-        ResultSet rs = statement.getGeneratedKeys(); // получаем сгенерированные ключи
-        if (rs.next()) { // если есть результаты
-            int penaltyNumber = rs.getInt(1); // получаем значение сгенерированного penalty_number из первой колонки
+        ResultSet rs = statement.getGeneratedKeys();
+        if (rs.next()) { 
+            int penaltyNumber = rs.getInt(1); 
             System.out.println("Generated Penalty Number: " + penaltyNumber);
         }
 
@@ -378,15 +406,15 @@ public class JDBCRunner {
         statement.close();
 
         System.out.println("INSERTed " + count + " fine");
-        // getDriver(connection); // Если нужно выполнить какой-то метод после вставки, раскомментируйте и добавьте его
+        
     }
 
     private static void correctCar(Connection connection, int id, String fines) throws SQLException {
         if (fines == null || fines.isBlank() || id <= 0) return;
 
         PreparedStatement statement = connection.prepareStatement("UPDATE car SET fines=? WHERE id=?;");
-        statement.setString(1, fines); // сначала что передаем
-        statement.setInt(2, id);   // затем по чему ищем
+        statement.setString(1, fines); 
+        statement.setInt(2, id);   
         statement.executeUpdate();
         System.out.println("Successful");
         getWithNumber(connection);
@@ -404,7 +432,7 @@ public class JDBCRunner {
         PreparedStatement statement = connection.prepareStatement("DELETE from car WHERE id=?;");
         statement.setInt(1, id);
 
-        int count = statement.executeUpdate(); // выполняем запрос на удаление и возвращаем количество измененных строк
+        int count = statement.executeUpdate();  
         System.out.println("DELETEd " + count);
         getWithNumber(connection);
     }
